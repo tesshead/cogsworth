@@ -1,5 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
+import { credentials } from '../api/credentials';
+import { fetchTransport } from '../api/fetchTransport';
 import { mockTransport } from '../api/mockTransport';
+import type { Transport } from '../api/transport';
 import { formatTime } from '../domain/time';
 import type { DayKey } from '../domain/types';
 import { useScheduleStore } from '../state/useScheduleStore';
@@ -9,26 +12,33 @@ import { SchedulerDnd, type DragData, type DropTarget } from './dnd/SchedulerDnd
 import { NoticeStack } from './NoticeStack';
 import { SidePanel, type SideTab } from './panels/SidePanel';
 import { UnscheduledPanel } from './panels/UnscheduledPanel';
+import { SetupGate } from './SetupGate';
 import { SyncStatus } from './SyncStatus';
 import { Toolbar } from './Toolbar';
 import { usePersistentState } from './usePersistentState';
 import { indexWarnings } from './warningIndex';
 import './app.css';
 
-// Only the mock exists until the Apps Script API lands (M3).
-// ?mockFailRate=0.3 makes 30% of mock saves fail, to try out retries.
+// VITE_API_URL points at the Apps Script deployment. Without it, the app runs on invented
+// mock data; ?mockFailRate=0.3 makes 30% of mock saves fail, to try out retries.
+const API_URL: string | undefined = import.meta.env.VITE_API_URL;
 const params = new URLSearchParams(window.location.search);
-const transport = mockTransport({ failRate: Number(params.get('mockFailRate') ?? 0) });
-if (import.meta.env.DEV) {
+const mock = API_URL ? null : mockTransport({ failRate: Number(params.get('mockFailRate') ?? 0) });
+const transport: Transport = API_URL ? fetchTransport(API_URL, credentials.key) : mock!;
+if (import.meta.env.DEV && mock) {
   // For trying out conflicts from the console: cogsworthMock.externalEdit('id', { start_time: '15:00' })
-  (window as unknown as { cogsworthMock: unknown }).cogsworthMock = transport.server;
+  (window as unknown as { cogsworthMock: unknown }).cogsworthMock = mock.server;
 }
 
-// Replaced by an editor name prompt in M5.
-const UPDATED_BY = 'unnamed editor';
-
 export function App() {
-  const store = useScheduleStore(transport, UPDATED_BY);
+  const [editorName, setEditorName] = useState(credentials.name);
+  const [keyRejected, setKeyRejected] = useState(false);
+  const needsKey = API_URL !== undefined && (keyRejected || !credentials.key());
+  const onUnauthorized = useCallback(() => {
+    credentials.setKey('');
+    setKeyRejected(true);
+  }, []);
+  const store = useScheduleStore(transport, editorName || 'unknown', onUnauthorized);
   const { view } = store;
   const [day, setDay] = usePersistentState<DayKey>('day', 'sat');
   const [shownOptional, setShownOptional] = usePersistentState<SectionKey[]>('sections', []);
@@ -62,6 +72,17 @@ export function App() {
     setSelectedId(null);
   };
 
+  const finishSetup = (name: string, key: string | null) => {
+    credentials.setName(name);
+    setEditorName(name.trim());
+    if (key !== null) {
+      credentials.setKey(key);
+      setKeyRejected(false);
+      void store.reload();
+      store.retryNow();
+    }
+  };
+
   const { edit } = store;
   const handleDrop = useCallback(
     (drag: DragData, target: DropTarget) => {
@@ -87,8 +108,11 @@ export function App() {
         onReload={() => void store.reload()}
         status={<SyncStatus saving={store.saving} unsavedCount={store.unsavedCount} saveError={store.saveError} onRetry={store.retryNow} />}
       />
+      {(!editorName || needsKey) && (
+        <SetupGate needsKey={needsKey} initialName={editorName} keyRejected={keyRejected} onSubmit={finishSetup} />
+      )}
       {!view && !store.loadError && <div className="placeholder">Loading schedule…</div>}
-      {!view && store.loadError && (
+      {!view && store.loadError && !needsKey && (
         <div className="placeholder error">
           Couldn’t load the schedule: {store.loadError}{' '}
           <button type="button" onClick={() => void store.reload()}>

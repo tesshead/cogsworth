@@ -838,3 +838,67 @@ button {
 .notice-load-failed {
   border-left-color: var(--error);
 }
+
+/* ---------- Setup gate ---------- */
+
+.gate-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(34, 32, 28, 0.35);
+}
+
+.gate {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 340px;
+  padding: 20px;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.gate h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.gate label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.gate input {
+  font: inherit;
+  font-weight: normal;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.gate button {
+  padding: 7px 12px;
+  border: none;
+  border-radius: 6px;
+  background: var(--text);
+  color: #fff;
+  cursor: pointer;
+}
+
+.gate button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.gate p {
+  margin: 0;
+}
+
+.gate-error {
+  color: var(--error);
+}

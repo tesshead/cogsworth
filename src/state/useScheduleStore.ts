@@ -2,6 +2,7 @@
 // server ⊕ local edits, and runs the save queue (one request at a time, retry with backoff).
 
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { isUnauthorized } from '../api/fetchTransport';
 import type { Transport } from '../api/transport';
 import { buildModel, type Model } from '../domain/model';
 import { parseSheetData } from '../domain/parse';
@@ -18,7 +19,8 @@ export interface ScheduleView {
   unsaved: Set<string>;
 }
 
-export function useScheduleStore(transport: Transport, updatedBy: string) {
+/** `onUnauthorized` runs when the API rejects the key; saving then waits for `retryNow`. */
+export function useScheduleStore(transport: Transport, updatedBy: string, onUnauthorized: () => void) {
   const [state, dispatch] = useReducer(syncReducer, initialSyncState);
   const failures = useRef(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -28,9 +30,10 @@ export function useScheduleStore(transport: Transport, updatedBy: string) {
     try {
       dispatch({ type: 'loaded', data: await transport.load() });
     } catch (e) {
+      if (isUnauthorized(e)) onUnauthorized();
       dispatch({ type: 'loadFailed', message: errorMessage(e) });
     }
-  }, [transport]);
+  }, [transport, onUnauthorized]);
 
   useEffect(() => {
     void reload();
@@ -49,15 +52,20 @@ export function useScheduleStore(transport: Transport, updatedBy: string) {
         dispatch({ type: 'sendSucceeded', results });
       })
       .catch((e) => {
-        failures.current++;
         dispatch({ type: 'sendFailed', message: errorMessage(e) });
+        // A bad key won't fix itself: wait for a new one instead of retrying.
+        if (isUnauthorized(e)) {
+          onUnauthorized();
+          return;
+        }
+        failures.current++;
         const delay = Math.min(RETRY_BASE_MS * 2 ** (failures.current - 1), RETRY_MAX_MS);
         retryTimer.current = setTimeout(() => dispatch({ type: 'retry' }), delay);
       })
       .finally(() => {
         sending.current = false;
       });
-  }, [state, transport, updatedBy]);
+  }, [state, transport, updatedBy, onUnauthorized]);
 
   useEffect(() => () => {
     if (retryTimer.current) clearTimeout(retryTimer.current);
