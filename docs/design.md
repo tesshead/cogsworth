@@ -210,8 +210,8 @@ The server:
 
 ```
 src/config.ts            event days, hours, slot size
-src/domain/              types, time, parse, instances, model
-src/validation/          rules/*, validate, status
+src/domain/              types, time, ids, parse, model (instances, orphans, bands), views (unscheduled, numbering, at-time)
+src/validation/          rules/*, validate, status (completeness per activity and performer)
 src/api/                 transport interface; fetchTransport, gasTransport, mockTransport; syncQueue
 src/state/               reducer, store
 src/ui/                  App, Toolbar, Board (TimeGutter, LocationColumn, PerformanceCard), panels
