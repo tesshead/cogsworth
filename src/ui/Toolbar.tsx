@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { DAYS } from '../config';
 import type { DayKey } from '../domain/types';
 import { SECTIONS, type SectionKey } from './board/layout';
@@ -9,10 +10,10 @@ interface Props {
   onToggleSection: (key: SectionKey) => void;
   sourceLabel: string;
   onReload: () => void;
-  loading: boolean;
+  status: ReactNode;
 }
 
-export function Toolbar({ day, onDay, visibleSections, onToggleSection, sourceLabel, onReload, loading }: Props) {
+export function Toolbar({ day, onDay, visibleSections, onToggleSection, sourceLabel, onReload, status }: Props) {
   return (
     <header className="toolbar">
       <h1>Cogsworth</h1>
@@ -32,9 +33,10 @@ export function Toolbar({ day, onDay, visibleSections, onToggleSection, sourceLa
         ))}
       </div>
       <div className="toolbar-end">
+        {status}
         <span className="source">{sourceLabel}</span>
-        <button type="button" onClick={onReload} disabled={loading}>
-          {loading ? 'Loading…' : 'Refresh'}
+        <button type="button" onClick={onReload}>
+          Refresh
         </button>
       </div>
     </header>

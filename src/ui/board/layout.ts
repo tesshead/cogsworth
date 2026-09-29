@@ -19,6 +19,8 @@ export interface ColumnDesc {
   key: string;
   section: SectionKey;
   title: string;
+  /** Where a drop lands; null when the column can't take drops (no roaming location defined). */
+  locationId: string | null;
   /** Minutes the column is open; time outside is shaded. */
   open: number;
   close: number;
@@ -46,6 +48,7 @@ export function buildColumns(model: Model, day: DayKey, visible: ReadonlySet<Sec
           key: location.id,
           section,
           title: location.name,
+          locationId: location.id,
           open: location.hours[day].open ?? bounds.open,
           close: location.hours[day].close ?? bounds.close,
           items: here.filter((i) => i.activity.kind !== 'event'),
@@ -69,6 +72,7 @@ export function buildColumns(model: Model, day: DayKey, visible: ReadonlySet<Sec
         key: `roaming:${activity.id}`,
         section,
         title: activity.name,
+        locationId: locations[0]?.id ?? null,
         open: bounds.open,
         close: bounds.close,
         items: atRoaming.filter((i) => i.activity.id === activity.id),

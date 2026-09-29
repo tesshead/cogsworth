@@ -1,6 +1,8 @@
+import { useDraggable } from '@dnd-kit/core';
 import type { Model, PlacedInstance } from '../../domain/model';
 import { formatClock } from '../../domain/time';
 import { cardNumber } from '../../domain/views';
+import type { DragData } from '../dnd/SchedulerDnd';
 import type { InstanceWarnings } from '../warningIndex';
 import { PX_PER_MIN, type LaneSlot } from './layout';
 
@@ -13,13 +15,25 @@ interface Props {
   inset: number;
   warnings: InstanceWarnings | undefined;
   selected: boolean;
+  unsaved: boolean;
   onSelect: (id: string) => void;
 }
 
 const MAX_BADGES = 3;
 
-export function Card({ model, instance, columnOpen, lane, inset, warnings, selected, onSelect }: Props) {
+export function Card({ model, instance, columnOpen, lane, inset, warnings, selected, unsaved, onSelect }: Props) {
   const { activity, placement } = instance;
+  const drag: DragData = {
+    instanceId: instance.id,
+    activity,
+    day: instance.day,
+    n: instance.n,
+    durationMin: placement.durationMin,
+    source: 'board',
+    from: { locationId: placement.locationId, start: placement.start },
+  };
+  const { setNodeRef, listeners, attributes, isDragging } = useDraggable({ id: instance.id, data: drag, disabled: instance.locked });
+
   const setupPx = activity.setupMin * PX_PER_MIN;
   const breakdownPx = activity.breakdownMin * PX_PER_MIN;
   const bodyPx = placement.durationMin * PX_PER_MIN;
@@ -33,10 +47,16 @@ export function Card({ model, instance, columnOpen, lane, inset, warnings, selec
   if (instance.orphan) classes.push('orphan');
   if (selected) classes.push('selected');
   if (compact) classes.push('compact');
+  if (instance.locked) classes.push('locked');
 
   return (
     <div
-      className="card-slot"
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      role={undefined}
+      tabIndex={undefined}
+      className={`card-slot${isDragging ? ' dragging' : ''}`}
       style={{
         top: (placement.occStart - columnOpen) * PX_PER_MIN,
         height: setupPx + bodyPx + breakdownPx,
@@ -50,8 +70,9 @@ export function Card({ model, instance, columnOpen, lane, inset, warnings, selec
         className={classes.join(' ')}
         style={{ height: bodyPx }}
         onClick={() => onSelect(instance.id)}
-        title={`${activity.name} · ${time}${instance.orphan ? ` · orphan (${instance.orphan})` : ''}`}
+        title={`${activity.name} · ${time}${instance.locked ? ' · locked' : ''}${instance.orphan ? ` · orphan (${instance.orphan})` : ''}`}
       >
+        {unsaved && <span className="unsaved-dot" title="Saving…" />}
         <span className="card-title">
           <span className="card-name">{activity.name}</span>
           <span className="card-meta">

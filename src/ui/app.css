@@ -704,3 +704,137 @@ button {
   background: var(--error-bg);
   color: var(--error);
 }
+
+/* ---------- Drag and drop ---------- */
+
+.card-slot {
+  touch-action: none;
+}
+
+.card-slot:has(.card:not(.locked)) {
+  cursor: grab;
+}
+
+.card-slot.dragging,
+.event-band.dragging,
+.pool-card.dragging {
+  opacity: 0.3;
+}
+
+.pool-card {
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-ghost {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 180px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--kind-bg);
+  border-left: 4px solid var(--kind-edge);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  cursor: grabbing;
+}
+
+.drag-ghost .card-meta {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.drop-ghost {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  z-index: 2;
+  border: 2px dashed var(--accent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 4px;
+  pointer-events: none;
+}
+
+.column-body.drop-over {
+  background-color: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+.unscheduled.drop-target {
+  outline: 2px dashed var(--border);
+  outline-offset: -6px;
+}
+
+.unscheduled.drop-over {
+  outline-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+
+.drop-hint {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.card {
+  position: relative;
+}
+
+.unsaved-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ---------- Sync status and notices ---------- */
+
+.sync {
+  font-size: 12px;
+}
+
+.sync-ok {
+  color: #2e7d4a;
+}
+
+.sync-saving {
+  color: var(--muted);
+}
+
+.sync-error {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.notices {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 420px;
+}
+
+.notice {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--surface);
+  border-left: 4px solid var(--warn);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.notice-rejected,
+.notice-load-failed {
+  border-left-color: var(--error);
+}

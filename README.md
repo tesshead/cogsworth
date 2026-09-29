@@ -17,5 +17,12 @@ npm run typecheck
 npm run build
 ```
 
+Until the Apps Script API is connected, the app runs on invented mock data held in memory
+(it resets on reload). To try out failure and conflict handling:
+
+- `?mockFailRate=0.5` makes half of all saves fail, so you can watch the retry behaviour.
+- In the dev console, `cogsworthMock.externalEdit('barnaby-sat-3', { start_time: '16:00' }, 'Sam')`
+  changes a row as if another editor had; your next move of that card gets a conflict notice.
+
 Real Faire data (Sheet exports, import CSVs) belongs in `local/`, which is git-ignored. This repo
 is public: never commit performer data, notes, contacts, or the API key.

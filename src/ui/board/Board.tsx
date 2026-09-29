@@ -11,13 +11,14 @@ interface Props {
   day: DayKey;
   visibleSections: ReadonlySet<SectionKey>;
   warningIndex: Map<string, InstanceWarnings>;
+  unsaved: Set<string>;
   selectedId: string | null;
   onSelect: (id: string) => void;
   markerTime: number | null;
   onPickTime: (minute: number) => void;
 }
 
-export function Board({ model, day, visibleSections, warningIndex, selectedId, onSelect, markerTime, onPickTime }: Props) {
+export function Board({ model, day, visibleSections, warningIndex, unsaved, selectedId, onSelect, markerTime, onPickTime }: Props) {
   const { open, close } = model.days[day];
   const columns = buildColumns(model, day, visibleSections);
   const slots: number[] = [];
@@ -59,6 +60,7 @@ export function Board({ model, day, visibleSections, warningIndex, selectedId, o
                     dayOpen={open}
                     dayClose={close}
                     warningIndex={warningIndex}
+                    unsaved={unsaved}
                     selectedId={selectedId}
                     onSelect={onSelect}
                     markerTime={markerTime}
