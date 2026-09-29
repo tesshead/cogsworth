@@ -10,6 +10,14 @@ describe('unscheduledGroups', () => {
     expect(unscheduledGroups(m, 'sun')).toEqual([]);
   });
 
+  it('counts placed orphan rows toward the requirement', () => {
+    const m = makeModel(
+      [activity('act', { counts: { sat: 2, sun: 0 } })],
+      [placed('act', 'sat', 1, ['main', '10:00']), placed('act', 'sat', 3, ['main', '12:00'])],
+    );
+    expect(unscheduledGroups(m, 'sat')).toEqual([]);
+  });
+
   it('drops the other day once a weekend count is met', () => {
     const solo = activity('solo', { counts: { sat: null, sun: null }, weekendCount: 1, durationMin: 60 });
     expect(unscheduledGroups(makeModel([solo]), 'sun').map((g) => g.remaining)).toEqual([1]);

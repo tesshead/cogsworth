@@ -2,7 +2,7 @@
 // numbering, and "what's happening at this time".
 
 import { instanceId } from './ids';
-import { isContinuous, placedInstances, type Instance, type Model, type PlacedInstance, type RoamingBand } from './model';
+import { dayCap, isContinuous, placedInstances, type Instance, type Model, type PlacedInstance, type RoamingBand } from './model';
 import { contains, overlaps } from './time';
 import { DAY_KEYS, type Activity, type DayKey } from './types';
 
@@ -29,8 +29,10 @@ export function unscheduledGroups(model: Model, day: DayKey): UnscheduledGroup[]
       continue;
     }
 
+    // Remaining is required minus placed (orphan rows count as placed), capped by open slots.
     const open = mine.filter((i) => i.day === day && i.orphan === null && i.placement === null).sort((a, b) => a.n - b.n);
-    let remaining = open.length;
+    const placedToday = mine.filter((i) => i.day === day && i.placement !== null).length;
+    let remaining = Math.min(open.length, dayCap(activity, day) - placedToday);
     if (activity.weekendCount !== null) {
       const placedTotal = mine.filter((i) => i.placement !== null).length;
       remaining = Math.min(remaining, activity.weekendCount - placedTotal);
