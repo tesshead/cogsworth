@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+
+# Real Faire data (exports, import CSVs). Never commit: the repo is public.
+local/
