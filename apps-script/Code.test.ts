@@ -183,3 +183,51 @@ describe('save', () => {
     ]);
   });
 });
+
+describe('acceptances', () => {
+  const ACCEPTANCES: Grid = [
+    ['FINAL PERFORMER SELECTIONS'],
+    ['PERFORMER BUDGET', '20000'],
+    ['Performer / Stage Name', 'Contact Name', 'Contact Email', 'Final Agreed Price', 'Offer', 'Days Agreed', 'Confirmed?'],
+    ['Raptors ', 'Pat', 'pat@example.test', '100', 'two 30 min shows', 'Saturday', 'Yes'],
+    ['', '', '', '', '', '', ''],
+    ['Declined Act', 'Sam', 'sam@example.test', '0', 'tbd', '', 'No'],
+  ];
+  const withAcceptances = () =>
+    loadApi({
+      Scheduler_Activities: [
+        ['id', 'kind', 'acceptance'],
+        ['raptors', 'stage', 'raptors'],
+        ['typo', 'stage', 'Rapturs'],
+      ],
+      Scheduler_Locations: LOCATIONS,
+      Scheduler_Schedule: scheduleGrid(),
+      Acceptances: ACCEPTANCES.map((r) => [...r]),
+    });
+
+  it('returns only the scheduling columns, finding the header below summary rows', () => {
+    const res = withAcceptances().post({ action: 'load', key: 'secret' });
+    expect(res.acceptances).toEqual([
+      { name: 'Raptors', offer: 'two 30 min shows', days_agreed: 'Saturday', confirmed: 'Yes' },
+      { name: 'Declined Act', offer: 'tbd', days_agreed: '', confirmed: 'No' },
+    ]);
+    expect(JSON.stringify(res)).not.toContain('example.test');
+  });
+
+  it('is null without an Acceptances tab', () => {
+    expect(api.post({ action: 'load', key: 'secret' }).acceptances).toBeNull();
+  });
+
+  it('marks activities reviewed with the current offer, adding the columns if needed', () => {
+    const a = withAcceptances();
+    const res = a.post({ action: 'review', key: 'secret', activityIds: ['raptors', 'typo', 'ghost'] });
+    expect(res.results.map((r: { status: string }) => r.status)).toEqual(['ok', 'error', 'error']);
+    const grid = a.sheets.Scheduler_Activities!.grid;
+    expect(grid[0]).toEqual(['id', 'kind', 'acceptance', 'reviewed_offer', 'reviewed_days']);
+    expect(grid[1]).toEqual(['raptors', 'stage', 'raptors', 'two 30 min shows', 'Saturday']);
+  });
+
+  it('requires the key to review', () => {
+    expect(withAcceptances().post({ action: 'review', activityIds: [] }).error.code).toBe('unauthorized');
+  });
+});

@@ -10,6 +10,14 @@ export interface LoadResult {
   activities: RawRow[];
   locations: RawRow[];
   schedule: RawRow[];
+  /** Name/offer/days_agreed/confirmed from the Acceptances tab; null if there is none. */
+  acceptances?: RawRow[] | null;
+}
+
+export interface ReviewResult {
+  id: string;
+  status: 'ok' | 'error';
+  message?: string;
 }
 
 /** Fields a save may change. null clears the cell. */
@@ -44,4 +52,6 @@ export interface Transport {
   load(): Promise<LoadResult>;
   /** Throws on network/auth failure; per-change problems come back as results. */
   save(changes: Change[], updatedBy: string): Promise<ChangeResult[]>;
+  /** Marks activities as reviewed against their current Acceptances offer. */
+  review(activityIds: string[]): Promise<ReviewResult[]>;
 }

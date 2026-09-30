@@ -3,7 +3,7 @@
 import { instanceId } from '../domain/ids';
 import { buildModel, type Model } from '../domain/model';
 import { parseTime } from '../domain/time';
-import type { Activity, DayKey, Location, ScheduleRow } from '../domain/types';
+import type { Acceptance, Activity, DayKey, Location, ScheduleRow } from '../domain/types';
 
 const t = (s: string) => parseTime(s)!;
 
@@ -27,6 +27,9 @@ export function activity(id: string, over: Partial<Activity> = {}): Activity {
     requires: [],
     tags: [],
     parentEvent: null,
+    acceptance: null,
+    reviewedOffer: null,
+    reviewedDays: null,
     notes: '',
     active: true,
     ...over,
@@ -85,6 +88,11 @@ export const LOCATIONS: Location[] = [
   location('lanes', { name: 'Lanes', type: 'roaming' }),
 ];
 
-export function makeModel(activities: Activity[], schedule: ScheduleRow[] = [], locations: Location[] = LOCATIONS): Model {
-  return buildModel({ activities, locations, schedule, issues: [] });
+export function makeModel(
+  activities: Activity[],
+  schedule: ScheduleRow[] = [],
+  locations: Location[] = LOCATIONS,
+  acceptances: Acceptance[] | null = null,
+): Model {
+  return buildModel({ activities, locations, schedule, acceptances, issues: [] });
 }

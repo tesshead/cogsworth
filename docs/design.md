@@ -75,6 +75,8 @@ Common parsing rules:
 | `location_rule` | `required` \| `preferred` | Severity of placing outside `allowed_locations`. Blank means `preferred`. |
 | `requires` | list | Capabilities the location must `provide`, e.g. `fire-safe`. |
 | `tags` | list | Descriptive only in v1 (`fire`, `weapons`, `animal`, `sound`, `stilts`, `aerial`, …). Shown as card badges; reserved for future calm-perimeter rules. |
+| `acceptance` | text, optional | The performer's name as written in the Acceptances tab (case and spacing don't matter). Several activities may share one. Links the activity to its offer for the Review check (§4a). |
+| `reviewed_offer`, `reviewed_days` | text | Written by "Mark reviewed": the Acceptances offer and agreed days last checked against this row. Don't edit by hand. |
 | `notes` | text | Private operational notes. Never exposed publicly. |
 | `active` | bool | Inactive activities generate nothing. Their placed rows become orphans. |
 
@@ -148,6 +150,23 @@ Deferred rules, which will need a `Scheduler_Constraints` tab and `tags`:
 - clustering,
 - preferred times.
 
+## 4a. Review against Acceptances
+
+Scheduling facts live only in `Scheduler_Activities`; the free-text Offer column can't be parsed
+reliably, and most scheduling facts aren't in Acceptances at all. Instead, Cogsworth watches the
+Acceptances tab (read-only: the script returns only name, offer, days agreed and confirmed; never
+contacts or fees) and lists what needs attention in a Review panel:
+
+| Item | When |
+|---|---|
+| offer-changed | A linked Acceptances row's offer or agreed days differ from `reviewed_offer` / `reviewed_days` (or the row was never reviewed). "Mark reviewed" copies the current values from the Sheet. |
+| unknown-acceptance | An activity's `acceptance` matches no Acceptances row. |
+| not-scheduled | A confirmed Acceptances row has no linked activity. Installations get a linked `active = FALSE` row to silence this. |
+| not-confirmed | An active linked activity's Acceptances row isn't confirmed. |
+
+Activities without `acceptance` (feasts, teas, workshops) are ignored. No Acceptances tab means
+no review items.
+
 ## 5. API
 
 `POST <exec URL>` with `Content-Type: text/plain;charset=utf-8` and a JSON body. Every response
@@ -167,7 +186,14 @@ is HTTP 200 with a JSON envelope: `{ok:true,…}` or
     { "id": "old-sun-3", "base_rev": 2, "delete": true }                // orphan cleanup only
   ] }
 → { "ok": true, "results": [ { "id": "…", "status": "ok" | "conflict" | "error", "row": {…}, "message": "…" } ] }
+
+// review — copy current Acceptances offer/days into reviewed_offer/reviewed_days
+{ "action": "review", "key": "…", "activityIds": ["dandy-stage", "dandy-barrel"] }
+→ { "ok": true, "results": [ { "id": "…", "status": "ok" | "error", "message": "…" } ] }
 ```
+
+`load` also returns `acceptances`: `[{ name, offer, days_agreed, confirmed }]`, or `null` when
+there is no Acceptances tab.
 
 The server:
 

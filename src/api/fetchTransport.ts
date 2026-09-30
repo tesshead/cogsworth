@@ -1,7 +1,7 @@
 // GitHub Pages → Apps Script web app. Requests are "simple" CORS requests (POST with a
 // text/plain body) because Apps Script can't answer a preflight. See docs/design.md §5.
 
-import type { Change, ChangeResult, LoadResult, Transport } from './transport';
+import type { Change, ChangeResult, LoadResult, ReviewResult, Transport } from './transport';
 
 export class ApiError extends Error {
   readonly code: string;
@@ -43,5 +43,6 @@ export function fetchTransport(url: string, getKey: () => string): Transport {
     load: () => call<LoadResult>({ action: 'load' }),
     save: async (changes: Change[], updatedBy: string) =>
       (await call<{ results: ChangeResult[] }>({ action: 'save', changes, updatedBy })).results,
+    review: async (activityIds: string[]) => (await call<{ results: ReviewResult[] }>({ action: 'review', activityIds })).results,
   };
 }

@@ -4,19 +4,22 @@
 
 import { instanceId } from '../domain/ids';
 import type { RawRow } from '../domain/parse';
-import type { Change, ChangeResult, LoadResult } from './transport';
+import type { Change, ChangeResult, LoadResult, ReviewResult } from './transport';
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export interface MockServer {
   load(): LoadResult;
   save(changes: Change[], updatedBy: string, now?: Date): ChangeResult[];
+  review(activityIds: string[]): ReviewResult[];
   /** Imitates another editor changing a row (for trying out conflict handling). */
   externalEdit(id: string, set: RawRow, updatedBy?: string): void;
 }
 
-export function createMockServer(seed: { activities: RawRow[]; locations: RawRow[]; schedule: RawRow[] }): MockServer {
+export function createMockServer(seed: { activities: RawRow[]; locations: RawRow[]; schedule: RawRow[]; acceptances?: RawRow[] | null }): MockServer {
   const activities = structuredClone(seed.activities);
+  const acceptances = seed.acceptances ? structuredClone(seed.acceptances) : null;
+  const norm = (s: string | undefined) => (s ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
   const locations = structuredClone(seed.locations);
   const rows = new Map(seed.schedule.map((r) => [r.id!, { ...r }]));
   const activityIds = new Set(activities.map((a) => a.id));
@@ -71,8 +74,19 @@ export function createMockServer(seed: { activities: RawRow[]; locations: RawRow
       activities: structuredClone(activities),
       locations: structuredClone(locations),
       schedule: [...rows.values()].map((r) => ({ ...r })),
+      acceptances: acceptances ? structuredClone(acceptances) : null,
     }),
     save,
+    review: (activityIds) =>
+      activityIds.map((id): ReviewResult => {
+        const activity = activities.find((a) => a.id === id);
+        if (!activity) return { id, status: 'error', message: 'Unknown activity' };
+        const acceptance = acceptances?.find((a) => norm(a.name) === norm(activity.acceptance));
+        if (!acceptance) return { id, status: 'error', message: 'Its acceptance name matches no Acceptances row' };
+        activity.reviewed_offer = acceptance.offer ?? '';
+        activity.reviewed_days = acceptance.days_agreed ?? '';
+        return { id, status: 'ok' };
+      }),
     externalEdit(id, set, updatedBy = 'someone else') {
       const current = rows.get(id);
       if (!current) return;

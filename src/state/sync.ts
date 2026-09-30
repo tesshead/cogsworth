@@ -19,7 +19,7 @@ export interface Patch {
 
 export interface Notice {
   seq: number;
-  kind: 'conflict' | 'rejected' | 'load-failed';
+  kind: 'conflict' | 'rejected' | 'load-failed' | 'review-failed';
   instanceId: string | null;
   /** Who made the change that won, for conflicts. */
   by: string;
@@ -27,7 +27,7 @@ export interface Notice {
 }
 
 export interface SyncState {
-  base: Pick<LoadResult, 'activities' | 'locations' | 'serverTime'> | null;
+  base: Pick<LoadResult, 'activities' | 'locations' | 'acceptances' | 'serverTime'> | null;
   server: Map<string, RawRow>;
   pending: Map<string, Patch>;
   inFlight: Map<string, Patch>;
@@ -46,6 +46,7 @@ export type SyncAction =
   | { type: 'sendSucceeded'; results: ChangeResult[] }
   | { type: 'sendFailed'; message: string }
   | { type: 'retry' }
+  | { type: 'reviewFailed'; message: string }
   | { type: 'dismissNotice'; seq: number };
 
 export const initialSyncState: SyncState = {
@@ -70,8 +71,8 @@ export function syncReducer(state: SyncState, action: SyncAction): SyncState {
         const known = state.server.get(row.id!);
         server.set(row.id!, known && rev(known) > rev(row) ? known : row);
       }
-      const { activities, locations, serverTime } = action.data;
-      return { ...state, base: { activities, locations, serverTime }, server, loadError: null };
+      const { activities, locations, acceptances, serverTime } = action.data;
+      return { ...state, base: { activities, locations, acceptances: acceptances ?? null, serverTime }, server, loadError: null };
     }
 
     case 'loadFailed':
@@ -128,6 +129,9 @@ export function syncReducer(state: SyncState, action: SyncAction): SyncState {
 
     case 'retry':
       return { ...state, saveError: null };
+
+    case 'reviewFailed':
+      return addNotice(state, { kind: 'review-failed', instanceId: null, by: '', message: action.message });
 
     case 'dismissNotice':
       return { ...state, notices: state.notices.filter((n) => n.seq !== action.seq) };

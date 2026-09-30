@@ -73,7 +73,8 @@ export function useScheduleStore(transport: Transport, updatedBy: string, onUnau
 
   const view = useMemo<ScheduleView | null>(() => {
     if (!state.base) return null;
-    const model = buildModel(parseSheetData({ activities: state.base.activities, locations: state.base.locations, schedule: effectiveSchedule(state) }));
+    const { activities, locations, acceptances } = state.base;
+    const model = buildModel(parseSheetData({ activities, locations, acceptances, schedule: effectiveSchedule(state) }));
     return { model, warnings: validate(model), unsaved: unsavedIds(state) };
   }, [state]);
 
@@ -83,6 +84,19 @@ export function useScheduleStore(transport: Transport, updatedBy: string, onUnau
     dispatch({ type: 'retry' });
   }, []);
   const dismissNotice = useCallback((seq: number) => dispatch({ type: 'dismissNotice', seq }), []);
+  const review = useCallback(
+    async (activityIds: string[]) => {
+      try {
+        const results = await transport.review(activityIds);
+        for (const r of results) if (r.status === 'error') dispatch({ type: 'reviewFailed', message: `${r.id}: ${r.message}` });
+      } catch (e) {
+        if (isUnauthorized(e)) onUnauthorized();
+        dispatch({ type: 'reviewFailed', message: errorMessage(e) });
+      }
+      await reload();
+    },
+    [transport, reload, onUnauthorized],
+  );
 
   return {
     view,
@@ -95,6 +109,7 @@ export function useScheduleStore(transport: Transport, updatedBy: string, onUnau
     edit,
     retryNow,
     dismissNotice,
+    review,
   };
 }
 

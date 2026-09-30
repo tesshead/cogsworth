@@ -907,3 +907,62 @@ button {
 .gate-error {
   color: var(--error);
 }
+
+/* ---------- Review ---------- */
+
+.review-list,
+.review-activities {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.review {
+  border-left: 3px solid var(--warn);
+  background: var(--warn-bg);
+  border-radius: 0 4px 4px 0;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.review-not-confirmed,
+.review-unknown-acceptance {
+  border-left-color: var(--error);
+  background: var(--error-bg);
+}
+
+.review p {
+  margin: 0;
+}
+
+.review-head {
+  display: flex;
+  flex-direction: column;
+}
+
+.review-offer {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 8px;
+  margin: 0;
+}
+
+.review-offer dt {
+  color: var(--muted);
+}
+
+.review-offer dd {
+  margin: 0;
+}
+
+.review button {
+  align-self: flex-start;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}

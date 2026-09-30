@@ -12,11 +12,16 @@ doesn't matter, and extra columns you add are ignored and left alone.
 
 | Tab | Header row |
 |---|---|
-| `Scheduler_Activities` | `id, performer_id, name, kind, sat_count, sun_count, weekend_count, flexible_count, continuous, duration_min, setup_min, breakdown_min, sat_available_from, sat_available_until, sun_available_from, sun_available_until, min_break_min, allowed_locations, location_rule, requires, tags, parent_event, notes, active` |
+| `Scheduler_Activities` | `id, performer_id, name, kind, sat_count, sun_count, weekend_count, flexible_count, continuous, duration_min, setup_min, breakdown_min, sat_available_from, sat_available_until, sun_available_from, sun_available_until, min_break_min, allowed_locations, location_rule, requires, tags, parent_event, acceptance, reviewed_offer, reviewed_days, notes, active` |
 | `Scheduler_Locations` | `id, name, type, sat_open, sat_close, sun_open, sun_close, provides, active, notes` |
 | `Scheduler_Schedule` | `id, activity_id, day, performance_no, location_id, start_time, duration_min, locked, notes, rev, updated_at, updated_by` |
 
 See `docs/design.md` §2 for what each column means.
+
+The script also reads the existing **`Acceptances`** tab, read-only, to power the app's Review
+panel (`docs/design.md` §4a). It finds the header row by its "Performer / Stage Name" cell and
+returns only the name, Offer, Days Agreed and Confirmed? columns; contacts and fees never leave
+the Sheet. If you rename that tab or those headers, the Review panel goes quiet.
 
 - Format time columns (`*_open`, `*_close`, `*_available_*`, `start_time`) as **Plain text**
   (Format → Number → Plain text) so Sheets doesn't turn `10:00` into a date. The script writes

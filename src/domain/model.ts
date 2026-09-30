@@ -7,6 +7,7 @@ import type { ParsedSheetData } from './parse';
 import { parseTime } from './time';
 import {
   DAY_KEYS,
+  type Acceptance,
   type Activity,
   type DataIssue,
   type DayKey,
@@ -64,6 +65,8 @@ export interface Model {
   /** Schedule rows whose activity id doesn't exist. */
   unknownRows: ScheduleRow[];
   bands: RoamingBand[];
+  /** Null when the Sheet has no Acceptances tab. */
+  acceptances: Acceptance[] | null;
   issues: DataIssue[];
 }
 
@@ -146,6 +149,7 @@ export function buildModel(data: ParsedSheetData, dayConfigs: readonly DayConfig
     instances,
     unknownRows,
     bands,
+    acceptances: data.acceptances,
     issues,
   };
 }

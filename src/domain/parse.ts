@@ -5,6 +5,7 @@
 import { parseTime } from './time';
 import {
   ACTIVITY_KINDS,
+  type Acceptance,
   DAY_KEYS,
   LOCATION_RULES,
   LOCATION_TYPES,
@@ -23,12 +24,15 @@ export interface RawSheetData {
   activities: RawRow[];
   locations: RawRow[];
   schedule: RawRow[];
+  /** Absent or null when the Sheet has no Acceptances tab. */
+  acceptances?: RawRow[] | null;
 }
 
 export interface ParsedSheetData {
   activities: Activity[];
   locations: Location[];
   schedule: ScheduleRow[];
+  acceptances: Acceptance[] | null;
   issues: DataIssue[];
 }
 
@@ -42,8 +46,20 @@ export function parseSheetData(raw: RawSheetData): ParsedSheetData {
     activities: parseRows(raw.activities, 'activities', issues, parseActivity),
     locations: parseRows(raw.locations, 'locations', issues, parseLocation),
     schedule: parseRows(raw.schedule, 'schedule', issues, parseScheduleRow),
+    acceptances: raw.acceptances ? parseAcceptances(raw.acceptances) : null,
     issues,
   };
+}
+
+function parseAcceptances(rows: RawRow[]): Acceptance[] {
+  return rows
+    .map((r) => ({
+      name: (r.name ?? '').trim(),
+      offer: (r.offer ?? '').trim(),
+      daysAgreed: (r.days_agreed ?? '').trim(),
+      confirmed: /^yes$/i.test((r.confirmed ?? '').trim()),
+    }))
+    .filter((a) => a.name !== '');
 }
 
 function parseRows<T extends { id: string }>(
@@ -175,6 +191,9 @@ function parseActivity(r: Reader): Activity | null {
     requires: r.list('requires'),
     tags: r.list('tags'),
     parentEvent: r.str('parent_event') || null,
+    acceptance: r.str('acceptance') || null,
+    reviewedOffer: r.str('reviewed_offer') || null,
+    reviewedDays: r.str('reviewed_days') || null,
     notes: r.str('notes'),
     active: r.bool('active', true),
   };

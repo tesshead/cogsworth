@@ -34,6 +34,7 @@ export function NoticeStack({ notices, model, onDismiss, onSelect }: Props) {
               </>
             )}
             {n.kind === 'load-failed' && <>Refresh failed: {n.message}. Showing the last loaded schedule.</>}
+            {n.kind === 'review-failed' && <>Couldn’t mark reviewed: {n.message}</>}
           </div>
           <button type="button" className="link" onClick={() => onDismiss(n.seq)} aria-label="Dismiss">
             ✕

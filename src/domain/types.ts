@@ -39,6 +39,11 @@ export interface Activity {
   requires: string[];
   tags: string[];
   parentEvent: string | null;
+  /** Performer name as written in the Acceptances tab; links the activity to its offer. */
+  acceptance: string | null;
+  /** Offer text and agreed days as of the last review, to detect changes in Acceptances. */
+  reviewedOffer: string | null;
+  reviewedDays: string | null;
   notes: string;
   active: boolean;
 }
@@ -71,6 +76,14 @@ export interface ScheduleRow {
   rev: number;
   updatedAt: string;
   updatedBy: string;
+}
+
+/** Read-only view of an Acceptances row (only the columns scheduling needs). */
+export interface Acceptance {
+  name: string;
+  offer: string;
+  daysAgreed: string;
+  confirmed: boolean;
 }
 
 export type SheetTab = 'activities' | 'locations' | 'schedule';

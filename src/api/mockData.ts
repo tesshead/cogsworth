@@ -21,17 +21,36 @@ export const MOCK_LOCATIONS: RawRow[] = [
   loc('lanes', 'Lanes', 'Roaming'),
 ];
 
+// Invented Acceptances rows (only the columns the API returns). Owls' offer has changed since
+// it was last reviewed, and "Mistress Quill" is confirmed but has no activity yet.
+export const MOCK_ACCEPTANCES: RawRow[] = [
+  { name: 'The Gilded Lutes', offer: 'both days - stage - three 30 min sets', days_agreed: 'Both Days', confirmed: 'Yes' },
+  { name: "Brother Barnaby's Tales", offer: 'both days - stage - three 45 min shows', days_agreed: 'Both Days', confirmed: 'Yes' },
+  { name: 'Owls of the Wood ', offer: 'saturday only - two 30 min shows', days_agreed: 'Saturday', confirmed: 'Yes' },
+  { name: 'Crossed Blades', offer: 'both days - demos + feast', days_agreed: 'Both Days', confirmed: 'Yes' },
+  { name: 'Hollybrook Morris', offer: 'tbd', days_agreed: 'Both Days', confirmed: 'No' },
+  { name: 'Mistress Quill', offer: 'both days - two 30 min storytelling sets', days_agreed: 'Both Days', confirmed: 'Yes' },
+  { name: 'Painted Wagon', offer: 'both days all day - non stage', days_agreed: 'Both Days', confirmed: 'Yes' },
+];
+
+const reviewed = (acceptance: string, offer: string, days = 'Both Days'): RawRow => ({ acceptance, reviewed_offer: offer, reviewed_days: days });
+
 const act = (id: string, name: string, kind: string, extra: RawRow = {}): RawRow => ({ id, name, kind, ...extra });
 
 export const MOCK_ACTIVITIES: RawRow[] = [
-  act('gilded-lutes', 'The Gilded Lutes', 'stage', { sat_count: '3', sun_count: '3', duration_min: '30', tags: 'sound' }),
-  act('barnaby', "Brother Barnaby's Tales", 'stage', { sat_count: '3', sun_count: '3', duration_min: '45', min_break_min: '30' }),
+  act('gilded-lutes', 'The Gilded Lutes', 'stage', {
+    sat_count: '3', sun_count: '3', duration_min: '30', tags: 'sound', ...reviewed('The Gilded Lutes', 'both days - stage - three 30 min sets'),
+  }),
+  act('barnaby', "Brother Barnaby's Tales", 'stage', {
+    sat_count: '3', sun_count: '3', duration_min: '45', min_break_min: '30', ...reviewed("Brother Barnaby's Tales", 'both days - stage - three 45 min shows'),
+  }),
   act('ember-circus', 'Ember Circus', 'stage', { sat_count: '3', sun_count: '3', duration_min: '30', requires: 'fire-safe', tags: 'fire, sound' }),
   act('punch-pottle', 'Punch & Pottle', 'stage', {
     sat_count: '2', sun_count: '2', duration_min: '30', allowed_locations: 'glen', location_rule: 'required',
   }),
   act('owls', 'Owls of the Wood', 'stage', {
     sat_count: '2', sun_count: '2', duration_min: '30', allowed_locations: 'hill-stage, glen', location_rule: 'preferred', tags: 'animal',
+    ...reviewed('Owls of the Wood', 'both days - stage - two 30 min shows'),
   }),
   act('silk-sisters', 'Silk Sisters Aerial', 'stage', {
     sat_count: '1', sun_count: '1', duration_min: '15', setup_min: '15', breakdown_min: '15', tags: 'aerial',
@@ -46,15 +65,16 @@ export const MOCK_ACTIVITIES: RawRow[] = [
   }),
   act('blades-feast', 'Crossed Blades (Feast)', 'dedicated', {
     performer_id: 'crossed-blades', sat_count: '2', sun_count: '2', duration_min: '60', parent_event: 'royal-feast',
-    allowed_locations: 'great-hall', location_rule: 'required', tags: 'weapons',
+    allowed_locations: 'great-hall', location_rule: 'required', tags: 'weapons', ...reviewed('Crossed Blades', 'both days - demos + feast'),
   }),
   act('blades-demo', 'Crossed Blades Demo', 'dedicated', {
     performer_id: 'crossed-blades', sat_count: '3', sun_count: '2', duration_min: '15', allowed_locations: 'tilt-yard', tags: 'weapons',
+    ...reviewed('Crossed Blades', 'both days - demos + feast'),
   }),
   act('fairy-tea', 'Fairy Tea', 'dedicated', {
     sat_count: '2', sun_count: '2', duration_min: '40', allowed_locations: 'tea-garden', location_rule: 'required',
   }),
-  act('hollybrook-morris', 'Hollybrook Morris', 'stage', { flexible_count: 'TRUE', duration_min: '15', tags: 'dance' }),
+  act('hollybrook-morris', 'Hollybrook Morris', 'stage', { flexible_count: 'TRUE', duration_min: '15', tags: 'dance', ...reviewed('Hollybrook Morris', 'tbd') }),
   act('pip-juggler', 'Pip the Juggler', 'roaming', { continuous: 'sat, sun', notes: 'Breaks as needed.' }),
   act('wren-dulcimer', 'Wren on Dulcimer', 'roaming', { continuous: 'sat, sun', sun_available_from: '11:00' }),
   act('bramble-deer', 'Bramble the Stilt Deer', 'roaming', {
@@ -63,6 +83,9 @@ export const MOCK_ACTIVITIES: RawRow[] = [
   act('tamsin-tumble', "Tamsin's Tumble", 'stage', { performer_id: 'tamsin', sat_count: '0', sun_count: '1', duration_min: '45' }),
   act('harpers', 'The Harpers', 'stage', { sat_count: 'two', sun_count: '1', duration_min: '30' }),
   act('animal-chat', 'Animal Chat', 'event', { active: 'FALSE', notes: 'Count and length pending.' }),
+  act('painted-wagon', 'Painted Wagon', 'dedicated', {
+    active: 'FALSE', notes: 'All-day installation; not scheduled.', ...reviewed('Painted Wagon', 'both days all day - non stage'),
+  }),
 ];
 
 let rev = 0;

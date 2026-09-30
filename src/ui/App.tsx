@@ -152,6 +152,7 @@ export function App() {
               onSelect={select}
               markerTime={markerTime}
               onMarkerTime={setMarkerTime}
+              onReview={store.review}
             />
           </div>
         </SchedulerDnd>

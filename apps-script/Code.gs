@@ -5,6 +5,7 @@
  * Every request is a POST with a text/plain body containing JSON:
  *   { action: 'load', key }
  *   { action: 'save', key, updatedBy, changes: [...] }
+ *   { action: 'review', key, activityIds: [...] }
  * Every response is HTTP 200 with { ok: true, ... } or { ok: false, error: { code, message } }.
  *
  * This file only stores data. It never enforces scheduling rules (those are warnings,
@@ -17,7 +18,19 @@ var TABS = {
   activities: 'Scheduler_Activities',
   locations: 'Scheduler_Locations',
   schedule: 'Scheduler_Schedule',
+  // Read-only: watched for offer changes. Only the columns below ever leave the Sheet
+  // (never contacts or fees).
+  acceptances: 'Acceptances',
 };
+
+var ACCEPTANCE_COLUMNS = {
+  name: 'performerstagename',
+  offer: 'offer',
+  days_agreed: 'daysagreed',
+  confirmed: 'confirmed',
+};
+
+var REVIEW_HEADERS = ['acceptance', 'reviewed_offer', 'reviewed_days'];
 
 var SCHEDULE_HEADERS = [
   'id', 'activity_id', 'day', 'performance_no', 'location_id', 'start_time',
@@ -60,6 +73,7 @@ function handle_(request) {
     if (keyProblem) return keyProblem;
     if (request.action === 'load') return load_();
     if (request.action === 'save') return save_(request.changes, request.updatedBy);
+    if (request.action === 'review') return review_(request.activityIds);
     return fail_('bad_request', 'Unknown action "' + request.action + '"');
   } catch (err) {
     return fail_('server_error', String((err && err.message) || err));
@@ -83,7 +97,36 @@ function load_() {
     activities: readTab_(TABS.activities),
     locations: readTab_(TABS.locations),
     schedule: readTab_(TABS.schedule),
+    acceptances: readAcceptances_(),
   };
+}
+
+/**
+ * The Acceptances tab has summary rows above its header, so the header row is found by its
+ * "Performer / Stage Name" cell. Returns null if the tab or header is missing.
+ */
+function readAcceptances_() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TABS.acceptances);
+  if (!sheet) return null;
+  var values = sheet.getDataRange().getDisplayValues();
+  for (var r = 0; r < values.length; r++) {
+    var compact = values[r].map(compactHeader_);
+    if (compact.indexOf(ACCEPTANCE_COLUMNS.name) === -1) continue;
+    var col = {};
+    Object.keys(ACCEPTANCE_COLUMNS).forEach(function (k) {
+      col[k] = compact.indexOf(ACCEPTANCE_COLUMNS[k]);
+    });
+    var rows = [];
+    for (var i = r + 1; i < values.length; i++) {
+      var row = {};
+      Object.keys(col).forEach(function (k) {
+        row[k] = col[k] === -1 ? '' : String(values[i][col[k]]).trim();
+      });
+      if (row.name) rows.push(row);
+    }
+    return rows;
+  }
+  return null;
 }
 
 /** Rows as { header: displayValue } objects, skipping blank rows. */
@@ -181,6 +224,50 @@ function applyChange_(table, change, activityIds, locationIds, who, now) {
   return { id: id, status: 'ok', row: copy_(next) };
 }
 
+// ---------------------------------------------------------------------------
+// review
+
+/**
+ * Marks activities as reviewed against Acceptances: copies the current offer text and agreed
+ * days into reviewed_offer/reviewed_days. The values come from the Sheet, not the request.
+ */
+function review_(activityIds) {
+  if (!Array.isArray(activityIds)) return fail_('bad_request', 'activityIds must be an array');
+  var lock = LockService.getScriptLock();
+  lock.waitLock(LOCK_WAIT_MS);
+  try {
+    var acceptances = readAcceptances_();
+    if (!acceptances) return fail_('bad_request', 'No Acceptances tab with a "Performer / Stage Name" header');
+    var byName = {};
+    acceptances.forEach(function (a) {
+      byName[normalizeName_(a.name)] = a;
+    });
+    var sheet = sheet_(TABS.activities);
+    var headers = ensureHeaders_(sheet, ['id'].concat(REVIEW_HEADERS));
+    var col = {};
+    headers.forEach(function (h, i) {
+      if (h && col[h] === undefined) col[h] = i + 1;
+    });
+    var lastRow = sheet.getLastRow();
+    var values = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, headers.length).getDisplayValues() : [];
+    var results = activityIds.map(function (id) {
+      for (var i = 0; i < values.length; i++) {
+        if (String(values[i][col.id - 1]).trim() !== id) continue;
+        var acceptance = byName[normalizeName_(values[i][col.acceptance - 1])];
+        if (!acceptance) return { id: id, status: 'error', message: 'Its acceptance name matches no Acceptances row' };
+        sheet.getRange(i + 2, col.reviewed_offer).setNumberFormat('@').setValue(acceptance.offer);
+        sheet.getRange(i + 2, col.reviewed_days).setNumberFormat('@').setValue(acceptance.days_agreed);
+        return { id: id, status: 'ok' };
+      }
+      return { id: id, status: 'error', message: 'Unknown activity' };
+    });
+    SpreadsheetApp.flush();
+    return { ok: true, results: results };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 /**
  * The Schedule tab as a small table keyed by id. Rows are always found by id, never by
  * position, so sorting or filtering the tab by hand is safe. Columns this script doesn't
@@ -188,7 +275,7 @@ function applyChange_(table, change, activityIds, locationIds, who, now) {
  */
 function openSchedule_() {
   var sheet = sheet_(TABS.schedule);
-  var headers = ensureHeaders_(sheet);
+  var headers = ensureHeaders_(sheet, SCHEDULE_HEADERS);
   var col = {};
   headers.forEach(function (h, i) {
     if (h && col[h] === undefined) col[h] = i + 1;
@@ -240,11 +327,11 @@ function openSchedule_() {
   };
 }
 
-/** Adds any missing Schedule columns to the header row and returns the headers. */
-function ensureHeaders_(sheet) {
+/** Adds any missing columns to the header row and returns the headers. */
+function ensureHeaders_(sheet, required) {
   var width = Math.max(sheet.getLastColumn(), 1);
   var headers = sheet.getRange(1, 1, 1, width).getDisplayValues()[0].map(normalizeHeader_);
-  SCHEDULE_HEADERS.forEach(function (h) {
+  required.forEach(function (h) {
     if (headers.indexOf(h) === -1) {
       var emptyAt = headers.indexOf('');
       var at = emptyAt === -1 ? headers.length : emptyAt;
@@ -266,6 +353,15 @@ function sheet_(name) {
 
 function normalizeHeader_(h) {
   return String(h).trim().toLowerCase().replace(/\s+/g, '_');
+}
+
+function compactHeader_(h) {
+  return String(h).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/** Case- and whitespace-insensitive, matching the app's normalizeName. */
+function normalizeName_(s) {
+  return String(s).trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 function idSet_(rows) {
