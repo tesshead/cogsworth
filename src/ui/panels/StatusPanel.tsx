@@ -21,7 +21,7 @@ export function StatusPanel({ model, day }: { model: Model; day: DayKey }) {
       <ul className="status-list">
         {shown.map((p) => (
           <li key={p.performerId}>
-            {p.activities.length > 1 && <div className="performer-group">{p.performerId}</div>}
+            {p.activities.length > 1 && <div className="performer-group">{humanize(p.performerId)}</div>}
             {p.activities.map((a) => (
               <StatusRow key={a.activity.id} status={a} model={model} day={day} />
             ))}
@@ -54,4 +54,12 @@ function StatusRow({ status, model, day }: { status: ActivityStatus; model: Mode
       {span && <span className="status-span muted" title={today.locationIds.map((id) => model.locations.get(id)?.name ?? id).join(', ')}>{span}</span>}
     </div>
   );
+}
+
+/** "dame-wisteria" → "Dame Wisteria", for performer group headings. */
+function humanize(id: string): string {
+  return id
+    .split('-')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
 }

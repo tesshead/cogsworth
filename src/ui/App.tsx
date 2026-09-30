@@ -23,8 +23,10 @@ import './app.css';
 // mock data; ?mockFailRate=0.3 makes 30% of mock saves fail, to try out retries.
 const API_URL: string | undefined = import.meta.env.VITE_API_URL;
 const params = new URLSearchParams(window.location.search);
-const mock = API_URL ? null : mockTransport({ failRate: Number(params.get('mockFailRate') ?? 0) });
-const transport: Transport = API_URL ? fetchTransport(API_URL, credentials.key) : mock!;
+// ?mock forces mock data in development, e.g. to try things without touching the real Sheet.
+const useMock = !API_URL || (import.meta.env.DEV && params.has('mock'));
+const mock = !useMock ? null : mockTransport({ failRate: Number(params.get('mockFailRate') ?? 0) });
+const transport: Transport = mock ?? fetchTransport(API_URL!, credentials.key);
 if (import.meta.env.DEV && mock) {
   // For trying out conflicts from the console: cogsworthMock.externalEdit('id', { start_time: '15:00' })
   (window as unknown as { cogsworthMock: unknown }).cogsworthMock = mock.server;
@@ -33,7 +35,7 @@ if (import.meta.env.DEV && mock) {
 export function App() {
   const [editorName, setEditorName] = useState(credentials.name);
   const [keyRejected, setKeyRejected] = useState(false);
-  const needsKey = API_URL !== undefined && (keyRejected || !credentials.key());
+  const needsKey = !mock && (keyRejected || !credentials.key());
   const [, setNoKey] = useState(false);
   const onUnauthorized = useCallback(() => {
     // Only say "rejected" if a key was actually tried; a first visit just has none yet.

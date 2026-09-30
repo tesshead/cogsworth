@@ -424,6 +424,7 @@ button {
 }
 
 .section {
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
   border-right: 2px solid var(--border);
@@ -444,22 +445,26 @@ button {
 }
 
 .section-columns {
+  flex: 1;
   display: flex;
 }
 
+/* Columns keep a readable minimum and share any spare width. */
 .column {
-  width: 176px;
-  flex: none;
+  flex: 1 0 176px;
+  max-width: 320px;
   border-right: 1px solid var(--grid-hour);
 }
 
 .column.section-roaming {
-  width: 120px;
+  flex-basis: 120px;
+  max-width: 200px;
 }
 
 .column.section-dedicated,
 .column.section-ambient {
-  width: 150px;
+  flex-basis: 150px;
+  max-width: 260px;
 }
 
 .column-header {
