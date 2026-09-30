@@ -34,9 +34,13 @@ export function App() {
   const [editorName, setEditorName] = useState(credentials.name);
   const [keyRejected, setKeyRejected] = useState(false);
   const needsKey = API_URL !== undefined && (keyRejected || !credentials.key());
+  const [, setNoKey] = useState(false);
   const onUnauthorized = useCallback(() => {
+    // Only say "rejected" if a key was actually tried; a first visit just has none yet.
+    const hadKey = credentials.key() !== '';
     credentials.setKey('');
-    setKeyRejected(true);
+    if (hadKey) setKeyRejected(true);
+    else setNoKey(true);
   }, []);
   const store = useScheduleStore(transport, editorName || 'unknown', onUnauthorized);
   const { view } = store;
