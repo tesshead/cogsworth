@@ -291,5 +291,5 @@ Import the existing Saturday and Sunday draft grids and the Events workbook into
 | M3 | Apps Script `load`/`save` + README. Workspace check. Sheet tabs populated and the draft import applied. |
 | M4 | Drag and drop, the sync queue, conflict handling. |
 | M5 | Undo/redo, lock, card popover, polling, unload guard. |
-| M6 | GitHub Pages workflow and deploy docs (or the HtmlService fallback). |
+| M6 | GitHub Pages workflow and deploy docs. Done: published at https://tesshead.github.io/cogsworth/ (the HtmlService fallback wasn't needed; "Anyone" access is available). |
 | Later | Search and filters, printing, `Scheduler_Constraints`, public read-only schedule, export. |
