@@ -67,8 +67,7 @@ function PoolCard({ group }: { group: UnscheduledGroup }) {
     >
       <span className="card-name">{activity.name}</span>
       <span className="card-meta">
-        {group.remaining === null ? 'flexible' : `${group.remaining} left`}
-        {activity.weekendCount !== null && group.remaining !== null ? ' (weekend)' : ''} · {activity.durationMin}m
+        {describeRemaining(group)} · {activity.durationMin}m
       </span>
       {activity.tags.length > 0 && (
         <span className="card-badges">
@@ -81,4 +80,12 @@ function PoolCard({ group }: { group: UnscheduledGroup }) {
       )}
     </div>
   );
+}
+
+function describeRemaining(group: UnscheduledGroup): string {
+  if (group.remaining === null) return 'flexible';
+  if (group.weekendPlaced !== null && group.activity.weekendCount !== null) {
+    return `${group.remaining} more this weekend (${group.weekendPlaced} of ${group.activity.weekendCount} placed)`;
+  }
+  return `${group.remaining} left`;
 }

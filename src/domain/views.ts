@@ -11,6 +11,8 @@ export interface UnscheduledGroup {
   day: DayKey;
   /** Cards left to place; null for flexible activities (unlimited). */
   remaining: number | null;
+  /** For weekend-count activities: how many are placed across both days. */
+  weekendPlaced: number | null;
   /** The instance a drop from this group will place. */
   nextInstanceId: string;
   nextN: number;
@@ -25,7 +27,7 @@ export function unscheduledGroups(model: Model, day: DayKey): UnscheduledGroup[]
 
     if (activity.flexibleCount) {
       const n = nextFlexibleN(mine, day);
-      groups.push({ activity, day, remaining: null, nextInstanceId: instanceId(activity.id, day, n), nextN: n });
+      groups.push({ activity, day, remaining: null, weekendPlaced: null, nextInstanceId: instanceId(activity.id, day, n), nextN: n });
       continue;
     }
 
@@ -33,12 +35,13 @@ export function unscheduledGroups(model: Model, day: DayKey): UnscheduledGroup[]
     const open = mine.filter((i) => i.day === day && i.orphan === null && i.placement === null).sort((a, b) => a.n - b.n);
     const placedToday = mine.filter((i) => i.day === day && i.placement !== null).length;
     let remaining = Math.min(open.length, dayCap(activity, day) - placedToday);
+    let weekendPlaced: number | null = null;
     if (activity.weekendCount !== null) {
-      const placedTotal = mine.filter((i) => i.placement !== null).length;
-      remaining = Math.min(remaining, activity.weekendCount - placedTotal);
+      weekendPlaced = mine.filter((i) => i.placement !== null).length;
+      remaining = Math.min(remaining, activity.weekendCount - weekendPlaced);
     }
     const next = open[0];
-    if (remaining > 0 && next) groups.push({ activity, day, remaining, nextInstanceId: next.id, nextN: next.n });
+    if (remaining > 0 && next) groups.push({ activity, day, remaining, weekendPlaced, nextInstanceId: next.id, nextN: next.n });
   }
   return groups;
 }

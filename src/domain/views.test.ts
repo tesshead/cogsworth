@@ -18,9 +18,16 @@ describe('unscheduledGroups', () => {
     expect(unscheduledGroups(m, 'sat')).toEqual([]);
   });
 
+  it('reports weekend progress across both days', () => {
+    const duo = activity('duo', { counts: { sat: null, sun: null }, weekendCount: 2, durationMin: 40 });
+    const m = makeModel([duo], [placed('duo', 'sat', 1, ['main', '18:45'])]);
+    expect(unscheduledGroups(m, 'sat').map((g) => [g.remaining, g.weekendPlaced])).toEqual([[1, 1]]);
+    expect(unscheduledGroups(m, 'sun').map((g) => [g.remaining, g.weekendPlaced])).toEqual([[1, 1]]);
+  });
+
   it('drops the other day once a weekend count is met', () => {
     const solo = activity('solo', { counts: { sat: null, sun: null }, weekendCount: 1, durationMin: 60 });
-    expect(unscheduledGroups(makeModel([solo]), 'sun').map((g) => g.remaining)).toEqual([1]);
+    expect(unscheduledGroups(makeModel([solo]), 'sun').map((g) => [g.remaining, g.weekendPlaced])).toEqual([[1, 0]]);
     const m = makeModel([solo], [placed('solo', 'sat', 1, ['gate', '11:00'])]);
     expect(unscheduledGroups(m, 'sun')).toEqual([]);
   });
